@@ -13,12 +13,13 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement; 
+import java.sql.Statement;
 import java.util.Properties;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.cysecurity.cspf.jvl.model.HashMe;
 
 /**
@@ -49,7 +50,23 @@ public class Install extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String configPath=getServletContext().getRealPath("/WEB-INF/config.properties");
-        
+
+        Properties existingConfig = new Properties();
+        existingConfig.load(new FileInputStream(configPath));
+        String installed = existingConfig.getProperty("installed");
+
+        if ("true".equals(installed)) {
+            HttpSession session = request.getSession(false);
+            if (session == null
+                    || session.getAttribute("isLoggedIn") == null
+                    || session.getAttribute("privilege") == null
+                    || !"admin".equals(session.getAttribute("privilege"))) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Only an authenticated admin can re-run installation.");
+                return;
+            }
+        }
+
         //Getting Database Configuration from User Input
         dburl = request.getParameter("dburl");
         jdbcdriver = request.getParameter("jdbcdriver");
@@ -69,8 +86,9 @@ public class Install extends HttpServlet {
          config.setProperty("dbpass",dbpass);
          config.setProperty("dbname",dbname);
          config.setProperty("siteTitle",siteTitle);
+         config.setProperty("installed","true");
          FileOutputStream fileout = new FileOutputStream(configPath);
-         config.store(fileout, null); 
+         config.store(fileout, null);
          fileout.close();
          
         String i=request.getParameter("setup");
