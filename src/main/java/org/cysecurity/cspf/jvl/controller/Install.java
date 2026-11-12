@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.cysecurity.cspf.jvl.model.HashMe;
 
 /**
@@ -48,6 +49,14 @@ public class Install extends HttpServlet {
    
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null
+                || session.getAttribute("privilege") == null
+                || !"admin".equals(session.getAttribute("privilege"))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Admin access required");
+            return;
+        }
+
         String configPath=getServletContext().getRealPath("/WEB-INF/config.properties");
         
         //Getting Database Configuration from User Input
