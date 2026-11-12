@@ -19,6 +19,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.cysecurity.cspf.jvl.model.HashMe;
 
 /**
@@ -48,8 +49,27 @@ public class Install extends HttpServlet {
    
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
         String configPath=getServletContext().getRealPath("/WEB-INF/config.properties");
-        
+
+        Properties existingConfig = new Properties();
+        existingConfig.load(new FileInputStream(configPath));
+        boolean alreadyInstalled = existingConfig.getProperty("dbname") != null
+                && !existingConfig.getProperty("dbname").isEmpty();
+
+        if (alreadyInstalled) {
+            HttpSession session = request.getSession(false);
+            if (session == null
+                    || session.getAttribute("isLoggedIn") == null
+                    || !"1".equals(session.getAttribute("isLoggedIn"))
+                    || session.getAttribute("privilege") == null
+                    || !"admin".equals(session.getAttribute("privilege"))) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Only an authenticated admin can reconfigure an installed application.");
+                return;
+            }
+        }
+
         //Getting Database Configuration from User Input
         dburl = request.getParameter("dburl");
         jdbcdriver = request.getParameter("jdbcdriver");
