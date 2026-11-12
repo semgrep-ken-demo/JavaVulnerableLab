@@ -14,6 +14,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.cysecurity.cspf.jvl.model.DBConnect;
  
 /**
@@ -38,11 +39,17 @@ public class SendMessage extends HttpServlet {
              try
              {
                  PrintWriter out = response.getWriter();
+                 HttpSession session=request.getSession(false);
+                 if(session==null || session.getAttribute("isLoggedIn")==null || !session.getAttribute("isLoggedIn").equals("1"))
+                 {
+                     response.sendRedirect(request.getContextPath()+"/login.jsp");
+                     return;
+                 }
+                 String sender=(String)session.getAttribute("user");
                  Connection con=new DBConnect().connect(getServletContext().getRealPath("/WEB-INF/config.properties"));
                             String recipient=request.getParameter("recipient");
                     String subject=request.getParameter("subject");
                  String msg=request.getParameter("msg");
-                 String sender=request.getParameter("sender");
                     if(con!=null && !con.isClosed() && request.getParameter("send")!=null)
                         {
                            //PreparedStatement to Prevent SQL Injection attack:       
